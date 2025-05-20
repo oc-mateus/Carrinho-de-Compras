@@ -1,6 +1,7 @@
 ﻿using System;
 
-namespace CarrinhoComprasPDF.Models
+namespace CarrinhoCompras.Models
+
 {
     public class ItemCompra
     {
@@ -8,7 +9,8 @@ namespace CarrinhoComprasPDF.Models
         public string Nome { get; set; }
         public int Quantidade { get; set; }
         public decimal Preco { get; set; }
-        public string Categoria { get; set; }
+        public string Categoria { get; set; } // alimentos, eletrodomesticos, moveis, vestuario
         public bool Comprado { get; set; }
+        public string ImagemUrl { get; set; } // Caminho ou URL da imagem do produto
     }
 }

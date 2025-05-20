@@ -1,48 +1,130 @@
 ﻿@model Dictionary<string, List<CarrinhoCompras.Models.ItemCompra>>
-
 @{
-    ViewData["Title"] = "Carrinho de Compras";
-    var totalPendente = ViewBag.TotalPendente ?? 0m;
+    ViewData["Title"] = "Lista de Compras";
 }
 
-<h1>Carrinho de Compras</h1>
+<h2 class="mb-4">Adicionar Item</h2>
 
-<form asp-action="Adicionar" method="post" style="margin-bottom:20px;">
-    <input type="text" name="nome" placeholder="Nome do item" required />
-    <input type="number" name="quantidade" min="1" placeholder="Quantidade" required />
-    <input type="number" name="preco" min="0" step="0.01" placeholder="Preço estimado" required />
-    <select name="categoria" required>
-        <option value="" disabled selected>Categoria</option>
-        <option value="Mercado">Mercado</option>
-        <option value="Farmácia">Farmácia</option>
-        <option value="Outros">Outros</option>
-    </select>
-    <button type="submit">Adicionar</button>
+<form asp-action="Adicionar" method="post" class="mb-5">
+    <div class="mb-3">
+        <input name="nome" placeholder="Nome" required class="form-control" />
+    </div>
+    <div class="mb-3">
+        <input name="quantidade" type="number" placeholder="Quantidade" required class="form-control" />
+    </div>
+    <div class="mb-3">
+        <input name="preco" type="number" step="0.01" placeholder="Preço" required class="form-control" />
+    </div>
+    <div class="mb-3">
+        <select name="categoria" class="form-select">
+            <option value="alimentos">Alimentos</option>
+            <option value="eletrodomesticos">Eletrodomésticos</option>
+            <option value="moveis">Móveis</option>
+            <option value="vestuario">Vestuário</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <input name="imagemUrl" placeholder="URL da imagem (opcional)" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-outline-success">Adicionar</button>
 </form>
+
+<hr />
 
 @foreach (var categoria in Model.Keys)
 {
-    <div style="margin-bottom: 30px;">
-        <h2>@categoria</h2>
-        <ul style="list-style:none; padding-left:0;">
-            @foreach (var item in Model[categoria])
-            {
-                <li style="margin-bottom: 8px; @(item.Comprado ? "text-decoration: line-through; color: gray;" : "")">
-                    @item.Nome - @item.Quantidade x R$ @item.Preco.ToString("F2")
-                    <form asp-action="Marcar" method="post" style="display:inline;">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <button type="submit" style="margin-left:10px;">
-                            @(item.Comprado ? "Pendente" : "Comprado")
+    <h3 class="mt-4">@categoria.ToUpper()</h3>
+    <a href="/Pdf/DownloadPdf?tema=@categoria" class="btn btn-link mb-3 p-0">Exportar PDF</a>
+
+    <ul class="list-group mb-4">
+        @foreach (var item in Model[categoria])
+        {
+            <li class="list-group-item">
+                <div class="d-flex flex-wrap align-items-center justify-content-between">
+                    <div class="me-3">
+                        <strong>@item.Nome</strong> - @item.Quantidade x R$ @item.Preco.ToString("F2")
+                        [@((item.Comprado) ? "Comprado" : "Pendente")]
+                    </div>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Ações">
+                        <form asp-action="Marcar" method="post" class="m-0 p-0 d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="mt-2 btn btn-outline-primary">Alterar status</button>
+                        </form>
+                        <button type="button"
+                                class="mt-2 btn btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirmDeleteModal"
+                                data-itemid="@item.Id"
+                                data-itemnome="@item.Nome">
+                            Excluir
                         </button>
-                    </form>
-                </li>
-            }
-        </ul>
-    </div>
+                    </div>
+                </div>
+
+                <form asp-action="Editar" method="post" class="mt-3 row g-2 align-items-center">
+                    <input type="hidden" name="id" value="@item.Id" />
+                    <div class="col-sm-3">
+                        <input name="nome" value="@item.Nome" required class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-sm-2">
+                        <input name="quantidade" type="number" value="@item.Quantidade" required class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-sm-2">
+                        <input name="preco" type="number" step="0.01" value="@item.Preco" required class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-sm-3">
+                        <input name="imagemUrl" value="@item.ImagemUrl" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Salvar</button>
+                    </div>
+                </form>
+
+                @if (!string.IsNullOrEmpty(item.ImagemUrl))
+                {
+                    <img src="@item.ImagemUrl" alt="@item.Nome" class="img-thumbnail mt-3" style="max-height:100px;" />
+                }
+            </li>
+        }
+    </ul>
 }
 
-<h3>Total pendente: R$ @((decimal)totalPendente).ToString("F2")</h3>
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deleteForm" method="post" asp-action="Excluir">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir o item <strong id="itemName"></strong>?</p>
+                    <input type="hidden" name="id" id="deleteItemId" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-outline-danger">Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-<form asp-action="Exportar" method="post">
-    <button type="submit">Exportar Lista</button>
-</form>
+@section Scripts {
+    <script>
+        var confirmDeleteModal = document.getElementById('confirmDeleteModal')
+        confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget
+            var itemId = button.getAttribute('data-itemid')
+            var itemName = button.getAttribute('data-itemnome')
+
+            var modalTitle = confirmDeleteModal.querySelector('.modal-title')
+            var modalBodyItemName = confirmDeleteModal.querySelector('#itemName')
+            var inputId = confirmDeleteModal.querySelector('#deleteItemId')
+
+            modalBodyItemName.textContent = itemName
+            inputId.value = itemId
+        })
+    </script>
+}

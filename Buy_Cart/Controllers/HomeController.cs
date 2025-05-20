@@ -1,84 +1,108 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using CarrinhoCompras.Models;
+using System.Text.Json;
 
 
-namespace CarrinhoComprasMVC.Controllers
+namespace CarrinhoCompras.Controllers
 {
     public class HomeController : Controller
     {
-        private const string SessionKey = "ListaCompras";
+            private const string SessionKey = "ListaCompras";
+
+        
 
         public IActionResult Index()
-        {
-            var listas = GetListasFromSession();
-            ViewBag.TotalPendente = listas.Values.SelectMany(x => x)
-                .Where(i => !i.Comprado)
-                .Sum(i => i.Preco * i.Quantidade);
-
-            return View(listas);
-        }
-
-        [HttpPost]
-        public IActionResult Adicionar(string nome, int quantidade, decimal preco, string categoria)
-        {
-            var listas = GetListasFromSession();
-
-            if (!listas.ContainsKey(categoria))
-                listas[categoria] = new List<ItemCompra>();
-
-            listas[categoria].Add(new ItemCompra
             {
-                Nome = nome,
-                Quantidade = quantidade,
-                Preco = preco,
-                Categoria = categoria
-            });
-
-            SaveListasToSession(listas);
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        public IActionResult Marcar(Guid id)
-        {
-            var listas = GetListasFromSession();
-
-            foreach (var lista in listas.Values)
-            {
-                var item = lista.FirstOrDefault(i => i.Id == id);
-                if (item != null)
-                {
-                    item.Comprado = !item.Comprado;
-                    break;
-                }
+                var listas = GetListasFromSession();
+                return View(listas);
             }
 
-            SaveListasToSession(listas);
-            return RedirectToAction(nameof(Index));
+        public IActionResult Contatos()
+        {
+            return View();
         }
 
         [HttpPost]
-        public IActionResult Exportar()
-        {
-            var listas = GetListasFromSession();
-            var json = JsonSerializer.Serialize(listas);
-            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            return File(bytes, "application/json", "lista_compras.json");
-        }
+            public IActionResult Adicionar(string nome, int quantidade, decimal preco, string categoria, string imagemUrl)
+            {
+                var listas = GetListasFromSession();
+                if (!listas.ContainsKey(categoria))
+                    listas[categoria] = new List<ItemCompra>();
 
-        private Dictionary<string, List<ItemCompra>> GetListasFromSession()
-        {
-            var json = HttpContext.Session.GetString(SessionKey);
-            if (string.IsNullOrEmpty(json))
-                return new Dictionary<string, List<ItemCompra>>();
-            return JsonSerializer.Deserialize<Dictionary<string, List<ItemCompra>>>(json);
-        }
+                listas[categoria].Add(new ItemCompra
+                {
+                    Nome = nome,
+                    Quantidade = quantidade,
+                    Preco = preco,
+                    Categoria = categoria,
+                    ImagemUrl = imagemUrl
+                });
 
-        private void SaveListasToSession(Dictionary<string, List<ItemCompra>> listas)
-        {
-            var json = JsonSerializer.Serialize(listas);
-            HttpContext.Session.SetString(SessionKey, json);
+                SaveListasToSession(listas);
+                return RedirectToAction("Index");
+            }
+
+            [HttpPost]
+            public IActionResult Marcar(Guid id)
+            {
+                var listas = GetListasFromSession();
+                foreach (var categoria in listas.Keys)
+                {
+                    var item = listas[categoria].FirstOrDefault(i => i.Id == id);
+                    if (item != null)
+                    {
+                        item.Comprado = !item.Comprado;
+                        break;
+                    }
+                }
+                SaveListasToSession(listas);
+                return RedirectToAction("Index");
+            }
+
+            [HttpPost]
+            public IActionResult Excluir(Guid id)
+            {
+                var listas = GetListasFromSession();
+                foreach (var categoria in listas.Keys.ToList())
+                {
+                    listas[categoria] = listas[categoria].Where(i => i.Id != id).ToList();
+                }
+                SaveListasToSession(listas);
+                return RedirectToAction("Index");
+            }
+
+            [HttpPost]
+            public IActionResult Editar(Guid id, string nome, int quantidade, decimal preco, string imagemUrl)
+            {
+                var listas = GetListasFromSession();
+                foreach (var categoria in listas.Keys)
+                {
+                    var item = listas[categoria].FirstOrDefault(i => i.Id == id);
+                    if (item != null)
+                    {
+                        item.Nome = nome;
+                        item.Quantidade = quantidade;
+                        item.Preco = preco;
+                        item.ImagemUrl = imagemUrl;
+                        break;
+                    }
+                }
+                SaveListasToSession(listas);
+                return RedirectToAction("Index");
+            }
+
+            private Dictionary<string, List<ItemCompra>> GetListasFromSession()
+            {
+                var json = HttpContext.Session.GetString(SessionKey);
+                if (string.IsNullOrEmpty(json))
+                    return new Dictionary<string, List<ItemCompra>>();
+                return JsonSerializer.Deserialize<Dictionary<string, List<ItemCompra>>>(json);
+            }
+
+            private void SaveListasToSession(Dictionary<string, List<ItemCompra>> listas)
+            {
+                var json = JsonSerializer.Serialize(listas);
+                HttpContext.Session.SetString(SessionKey, json);
+            }
         }
     }
-}
