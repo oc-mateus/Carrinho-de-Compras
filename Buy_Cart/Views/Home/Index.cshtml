@@ -1,8 +1,48 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model Dictionary<string, List<CarrinhoCompras.Models.ItemCompra>>
+
+@{
+    ViewData["Title"] = "Carrinho de Compras";
+    var totalPendente = ViewBag.TotalPendente ?? 0m;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h1>Carrinho de Compras</h1>
+
+<form asp-action="Adicionar" method="post" style="margin-bottom:20px;">
+    <input type="text" name="nome" placeholder="Nome do item" required />
+    <input type="number" name="quantidade" min="1" placeholder="Quantidade" required />
+    <input type="number" name="preco" min="0" step="0.01" placeholder="Preço estimado" required />
+    <select name="categoria" required>
+        <option value="" disabled selected>Categoria</option>
+        <option value="Mercado">Mercado</option>
+        <option value="Farmácia">Farmácia</option>
+        <option value="Outros">Outros</option>
+    </select>
+    <button type="submit">Adicionar</button>
+</form>
+
+@foreach (var categoria in Model.Keys)
+{
+    <div style="margin-bottom: 30px;">
+        <h2>@categoria</h2>
+        <ul style="list-style:none; padding-left:0;">
+            @foreach (var item in Model[categoria])
+            {
+                <li style="margin-bottom: 8px; @(item.Comprado ? "text-decoration: line-through; color: gray;" : "")">
+                    @item.Nome - @item.Quantidade x R$ @item.Preco.ToString("F2")
+                    <form asp-action="Marcar" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button type="submit" style="margin-left:10px;">
+                            @(item.Comprado ? "Pendente" : "Comprado")
+                        </button>
+                    </form>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+<h3>Total pendente: R$ @((decimal)totalPendente).ToString("F2")</h3>
+
+<form asp-action="Exportar" method="post">
+    <button type="submit">Exportar Lista</button>
+</form>
