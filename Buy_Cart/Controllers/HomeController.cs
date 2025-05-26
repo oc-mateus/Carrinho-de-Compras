@@ -19,7 +19,7 @@ namespace CarrinhoCompras.Controllers
 
         public IActionResult Contatos()
         {
-            return View();
+            return View("Contatos");
         }
 
         [HttpPost]
