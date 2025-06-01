@@ -1,108 +1,52 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using CarrinhoCompras.Data;
 using CarrinhoCompras.Models;
-using System.Text.Json;
-
+using Buy_Cart.Models;
 
 namespace CarrinhoCompras.Controllers
 {
+    [Authorize]
     public class HomeController : Controller
     {
-            private const string SessionKey = "ListaCompras";
+        private readonly ILogger<HomeController> _logger;
+        private readonly AppDbContext _context;
 
-        
-
-        public IActionResult Index()
-            {
-                var listas = GetListasFromSession();
-                return View(listas);
-            }
-
-        public IActionResult Contatos()
+        public HomeController(ILogger<HomeController> logger, AppDbContext context)
         {
-            return View("Contatos");
+            _logger = logger;
+            _context = context;
         }
 
-        [HttpPost]
-            public IActionResult Adicionar(string nome, int quantidade, decimal preco, string categoria, string imagemUrl)
+        public async Task<IActionResult> Index()
+        {
+            var totalCategorias = await _context.Categorias.CountAsync();
+            var totalItens = await _context.Itens.CountAsync();
+            var itensComprados = await _context.Itens.Where(i => i.Comprado).CountAsync();
+            var itensPendentes = totalItens - itensComprados;
+
+            var resumo = new ResumoViewModel
             {
-                var listas = GetListasFromSession();
-                if (!listas.ContainsKey(categoria))
-                    listas[categoria] = new List<ItemCompra>();
+                TotalCategorias = totalCategorias,
+                TotalItens = totalItens,
+                ItensComprados = itensComprados,
+                ItensPendentes = itensPendentes
+            };
 
-                listas[categoria].Add(new ItemCompra
-                {
-                    Nome = nome,
-                    Quantidade = quantidade,
-                    Preco = preco,
-                    Categoria = categoria,
-                    ImagemUrl = imagemUrl
-                });
+            return View(resumo);
+        }
 
-                SaveListasToSession(listas);
-                return RedirectToAction("Index");
-            }
+        public IActionResult Privacy()
+        {
+            return View();
+        }
 
-            [HttpPost]
-            public IActionResult Marcar(Guid id)
-            {
-                var listas = GetListasFromSession();
-                foreach (var categoria in listas.Keys)
-                {
-                    var item = listas[categoria].FirstOrDefault(i => i.Id == id);
-                    if (item != null)
-                    {
-                        item.Comprado = !item.Comprado;
-                        break;
-                    }
-                }
-                SaveListasToSession(listas);
-                return RedirectToAction("Index");
-            }
-
-            [HttpPost]
-            public IActionResult Excluir(Guid id)
-            {
-                var listas = GetListasFromSession();
-                foreach (var categoria in listas.Keys.ToList())
-                {
-                    listas[categoria] = listas[categoria].Where(i => i.Id != id).ToList();
-                }
-                SaveListasToSession(listas);
-                return RedirectToAction("Index");
-            }
-
-            [HttpPost]
-            public IActionResult Editar(Guid id, string nome, int quantidade, decimal preco, string imagemUrl)
-            {
-                var listas = GetListasFromSession();
-                foreach (var categoria in listas.Keys)
-                {
-                    var item = listas[categoria].FirstOrDefault(i => i.Id == id);
-                    if (item != null)
-                    {
-                        item.Nome = nome;
-                        item.Quantidade = quantidade;
-                        item.Preco = preco;
-                        item.ImagemUrl = imagemUrl;
-                        break;
-                    }
-                }
-                SaveListasToSession(listas);
-                return RedirectToAction("Index");
-            }
-
-            private Dictionary<string, List<ItemCompra>> GetListasFromSession()
-            {
-                var json = HttpContext.Session.GetString(SessionKey);
-                if (string.IsNullOrEmpty(json))
-                    return new Dictionary<string, List<ItemCompra>>();
-                return JsonSerializer.Deserialize<Dictionary<string, List<ItemCompra>>>(json);
-            }
-
-            private void SaveListasToSession(Dictionary<string, List<ItemCompra>> listas)
-            {
-                var json = JsonSerializer.Serialize(listas);
-                HttpContext.Session.SetString(SessionKey, json);
-            }
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
+}

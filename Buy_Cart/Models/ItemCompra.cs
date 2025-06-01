@@ -1,16 +1,20 @@
-﻿using System;
-
-namespace CarrinhoCompras.Models
-
+﻿namespace CarrinhoCompras.Models
 {
     public class ItemCompra
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
         public string Nome { get; set; }
         public int Quantidade { get; set; }
         public decimal Preco { get; set; }
-        public string Categoria { get; set; } // alimentos, eletrodomesticos, moveis, vestuario
-        public bool Comprado { get; set; }
-        public string ImagemUrl { get; set; } // Caminho ou URL da imagem do produto
+        public bool Comprado { get; set; } = false;
+        public string Imagem { get; set; }
+
+        // FK para Categoria
+        public int CategoriaId { get; set; }
+        public Categoria Categoria { get; set; }
+
+        // FK para o usuário dono do item (opcional, se quiser associar direto)
+        public string UsuarioId { get; set; }
+        public Usuario Usuario { get; set; }
     }
 }

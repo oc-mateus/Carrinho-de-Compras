@@ -40,11 +40,11 @@ namespace CarrinhoComprasPDF.Controllers
                     doc.Add(new Paragraph($"Preço: R$ {item.Preco:F2}"));
                     doc.Add(new Paragraph($"Status: {(item.Comprado ? "Comprado" : "Pendente")}"));
 
-                    if (!string.IsNullOrEmpty(item.ImagemUrl))
+                    if (!string.IsNullOrEmpty(item.Imagem))
                     {
                         try
                         {
-                            var img = Image.GetInstance(item.ImagemUrl);
+                            var img = Image.GetInstance(item.Imagem);
                             img.ScaleToFit(100f, 100f);
                             doc.Add(img);
                         }
